@@ -97,10 +97,11 @@ def is_char_whitespace(char: str):
 
 
 def is_char_valid(char: str):
-    return char.isalnum() or \
+    return char is None or \
         is_char_whitespace(char) or \
         char in ['/', ';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '*', '=', '<', '=='] or \
-        char is None
+        char.isalnum()
+        
 
 
 class SymbolTable:
@@ -128,8 +129,8 @@ class LexicalErrors:
             TokenName.UNMATCHED_COMMENT: 'Unmatched comment'
         }
 
-    def add_error(self, lexeme, token_name):
-        self.errors_list.append((lexeme, self.token_name_to_error_string[token_name]))
+    def add_error(self,lineno, lexeme, token_name):
+        self.errors_list.append((lineno, lexeme, self.token_name_to_error_string[token_name]))
 
 
 class Scanner:
@@ -167,9 +168,11 @@ class Scanner:
     def check_error(self):
         if self.error_occurred():
             lexeme = self.lexeme
+            errorline = self.lineno
             if self.token_name == TokenName.UNCLOSED_COMMENT and len(lexeme) > 7:
                 lexeme = lexeme[:7] + '...'
-            self.lexical_errors.add_error(lexeme, self.token_name)
+                errorline = self.comment_lineno
+            self.lexical_errors.add_error(errorline, lexeme, self.token_name)
             self.state = State.START
             self.lexeme = ''
 
@@ -213,11 +216,11 @@ class Scanner:
             if self.error_occurred():
                 self.append_char = True
 
-            if self.state == State.COMMENT1 and self.token_name == TokenName.INVALID_INPUT:
+            if self.state == State.COMMENT1 and self.token_name == TokenName.INVALID_INPUT and is_char_valid(char):
                 self.append_char = False
                 self.lexeme = '/'
 
-            if self.append_char:
+            if self.append_char and char is not None:
                 self.lexeme += char
 
             self.check_error()
@@ -246,6 +249,7 @@ class Scanner:
     def handle_comment1_state(self, char):
         self.append_char = True
         if char == '*':
+            self.comment_lineno = self.lineno       #in case of unclosed comment
             self.state = State.COMMENT2
         else:
             self.token_name = TokenName.INVALID_INPUT
@@ -280,8 +284,8 @@ class Scanner:
                 self.pull_back_char_pointer()
 
     def handle_num_state(self, char):
-        if not char.isnumeric():
-            if not char.isalpha():
+        if char is None or not char.isnumeric():
+            if char is None or not char.isalpha():
                 self.append_char = False
                 self.state = State.END
                 self.token_name = TokenName.NUM
@@ -291,7 +295,7 @@ class Scanner:
                 self.token_name = TokenName.INVALID_NUM
 
     def handle_id_state(self, char):
-        if not char.isalnum():
+        if char is None or not char.isalnum():
             self.append_char = False
             self.state = State.END
             self.token_name = TokenName.ID
@@ -299,24 +303,26 @@ class Scanner:
                 self.pull_back_char_pointer()
 
     def handle_start_state(self, char):
-        if char.isalpha():
+        if char is None:
+            self.token_name = TokenName.EOF
+            self.state = State.END
+        elif char.isalpha():
             self.state = State.ID
         elif char.isnumeric():
             self.state = State.NUM
         else:
-            self.append_char = False
             if char == '=':
                 self.state = State.ASSIGN
             elif char == '/':
                 self.state = State.COMMENT1
-                self.append_char = True
             elif char == '*':
                 self.state = State.STAR
-                self.append_char = True
             elif is_char_whitespace(char):
+                self.append_char = False
                 return
             else:
                 self.state = State.END
+                self.append_char = False
                 if char == '+':
                     self.token_name = TokenName.ADD
                 elif char == '-':
@@ -337,8 +343,8 @@ class Scanner:
                     self.token_name = TokenName.COMMA
                 elif char == ';':
                     self.token_name = TokenName.SEMI
-                elif char is None:
-                    self.token_name = TokenName.EOF
+                elif char == '<':
+                    self.token_name = TokenName.SMALLER
                 else:
                     self.token_name = TokenName.INVALID_INPUT
 
