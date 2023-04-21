@@ -234,7 +234,7 @@ class Scanner:
         if not self.token_name == TokenName.EOF:
             return get_token_pair(self.token_name, self.lexeme)
         else:
-            return 0
+            return ('EOF', '$')
 
     def handle_assign_state(self, char):
         self.append_char = False
