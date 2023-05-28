@@ -14,7 +14,6 @@ class State(Enum):
 
 
 class TokenName(Enum):
-
     IF = 0
     ELSE = 1
     INT = 2
@@ -48,6 +47,8 @@ class TokenName(Enum):
     UNCLOSED_COMMENT = 28
     UNMATCHED_COMMENT = 29
 
+    OUTPUT = 30
+
 
 def get_token_pair(token_name: TokenName, lexeme: str):
     return {
@@ -61,6 +62,7 @@ def get_token_pair(token_name: TokenName, lexeme: str):
         TokenName.BREAK: ('KEYWORD', 'break'),
         TokenName.UNTIL: ('KEYWORD', 'until'),
         TokenName.RETURN: ('KEYWORD', 'return'),
+        TokenName.OUTPUT: ('KEYWORD', 'output'),
         TokenName.SEMI: ('SYMBOL', ';'),
         TokenName.COLON: ('SYMBOL', ':'),
         TokenName.COMMA: ('SYMBOL', ','),
@@ -89,6 +91,7 @@ def get_token_if_id_is_keyword(lexeme: str):
         'break': TokenName.BREAK,
         'until': TokenName.UNTIL,
         'return': TokenName.RETURN,
+        'output': TokenName.OUTPUT
     }.get(lexeme, TokenName.ID)
 
 
@@ -101,22 +104,22 @@ def is_char_valid(char: str):
         is_char_whitespace(char) or \
         char in ['/', ';', ':', ',', '[', ']', '(', ')', '{', '}', '+', '-', '*', '=', '<', '=='] or \
         char.isalnum()
-        
 
 
-class SymbolTable:
-    def __init__(self):
-        self.dict = dict()  # {ID/KEYWORD: dict()}
-
-    def initialize_with_keywords(self):
-        for key in ['break', 'else', 'if', 'int', 'repeat', 'return', 'until', 'void']:
-            self.insert(key)
-
-    def exists(self, name):
-        return name in self.dict
-
-    def insert(self, name):
-        self.dict[name] = dict()
+# class SymbolTable:
+#     def __init__(self):
+#         self.dict = dict()  # {ID/KEYWORD: dict()}
+#         self.addr_counter = count(start=PB_SIZE, step=4)
+#
+#     def initialize_with_keywords(self):
+#         for key in ['break', 'else', 'if', 'int', 'repeat', 'return', 'until', 'void']:
+#             self.insert(key)
+#
+#     def exists(self, name):
+#         return name in self.dict
+#
+#     def insert(self, name):
+#         self.dict[name] = dict()
 
 
 class LexicalErrors:
@@ -129,18 +132,18 @@ class LexicalErrors:
             TokenName.UNMATCHED_COMMENT: 'Unmatched comment'
         }
 
-    def add_error(self,lineno, lexeme, token_name):
+    def add_error(self, lineno, lexeme, token_name):
         self.errors_list.append((lineno, lexeme, self.token_name_to_error_string[token_name]))
 
 
 class Scanner:
 
-    def __init__(self, file):
+    def __init__(self, file, symbol_table):
         self.char_idx = 0
         self.lineno = 1
         self.text = file.read()
         self.file_len = len(self.text)
-        self.symbol_table = SymbolTable()
+        self.symbol_table = symbol_table
         self.symbol_table.initialize_with_keywords()
         self.lexical_errors = LexicalErrors()
 
@@ -249,7 +252,7 @@ class Scanner:
     def handle_comment1_state(self, char):
         self.append_char = True
         if char == '*':
-            self.comment_lineno = self.lineno       #in case of unclosed comment
+            self.comment_lineno = self.lineno  # in case of unclosed comment
             self.state = State.COMMENT2
         else:
             self.token_name = TokenName.INVALID_INPUT
@@ -347,4 +350,3 @@ class Scanner:
                     self.token_name = TokenName.SMALLER
                 else:
                     self.token_name = TokenName.INVALID_INPUT
-
