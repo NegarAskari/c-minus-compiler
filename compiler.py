@@ -8,19 +8,7 @@ input_file.close()
 parser.generate_tree()
 root = parser.root
 
-with open('parse_tree.txt', 'w',  encoding="utf-8") as tree_file:
-    for pre, fill, node in RenderTree(root):
-        tree_file.write("%s%s\n" % (pre, node.name))
-
-
-with open('syntax_errors.txt', 'w') as errors_file:
-    if len(parser.errors) == 0:
-        errors_file.write("There is no syntax error.")
-    else:
-        for error in parser.errors:
-            errors_file.write(error + "\n")
-
 with open('output.txt', 'w') as output_file:
-    for cmd in parser.code_gen.pb:
+    for i, cmd in enumerate(parser.code_gen.pb):
         if len(cmd) > 0:
-            output_file.write(cmd + '\n')
+            output_file.write(str(i) + "\t" + cmd + '\n')
