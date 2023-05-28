@@ -87,8 +87,6 @@ class Parser:
         if self.current_token[0] == 'NUM' or self.current_token[0] == 'ID':  # get terminal form
             self.terminal = self.current_token[0]
 
-        # print(self.terminal)
-
     def add_error(self, error):
         self.errors.append(f"#{self.scanner.lineno} : syntax error, {error}")
 
@@ -96,11 +94,6 @@ class Parser:
         self.next_token()
         self.Program()
         while len(self.stack):
-
-            # print(self.code_gen.ss)
-            # # print(len(self.code_gen.pb))
-            # print(self.code_gen.i)
-            # print(self.code_gen.pb)
 
             pop = self.stack.pop()
             if callable(pop):
@@ -281,7 +274,6 @@ class Parser:
 
     def Statement(self, parent):
         node = Node('Statement', parent)
-        # print(self.terminal)
         if self.terminal == 'output':
             self.stack.append((';', node))
             self.stack.append((')', node))
@@ -444,7 +436,6 @@ class Parser:
             self.stack.append(('<', node))
             self.stack.append(self.code_gen.push_lt)
         elif self.terminal == '==':
-            # print(1)
             self.stack.append(('==', node))
             self.stack.append(self.code_gen.push_eq)
         else:
