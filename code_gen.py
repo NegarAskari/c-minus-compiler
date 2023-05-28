@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import List
-from itertools import count
 
 PB_SIZE = 1000
 
@@ -102,28 +101,6 @@ class CodeGen:
         self.ss.pop()
         self.i += 1
 
-    # def allocate_array_assign(self):
-    #     already_allocated = False
-    #     for key in self.symbol_table:
-    #         if SYMBOL_TABLE_KEYS.ADDRESS in self.symbol_table[key] and\
-    #                 self.symbol_table[key][SYMBOL_TABLE_KEYS.ADDRESS] == int(self.ss[-2]):
-    #             if self.symbol_table[key][SYMBOL_TABLE_KEYS.ALLOCATED]:
-    #                 already_allocated = True
-    #             else:
-    #                 self.symbol_table[key][SYMBOL_TABLE_KEYS.ALLOCATED] = True
-    #     if not already_allocated:
-    #         self.pb[self.i] = assign_str('#0', self.ss[-2])
-    #         arr_len = int(self.ss[-1])
-    #         for _ in range(arr_len - 1):
-    #             next(self.addr_counter)
-    #             # self.pb[self.i] = assign_str('#0', next(self.addr_counter))
-    #             # self.i += 1
-    #         self.i += 1
-    #
-    #     self.ss.pop()
-    #     self.ss.pop()
-
-
     def save(self):
         self.ss.append(str(self.i))
         self.i += 1
@@ -136,7 +113,6 @@ class CodeGen:
         self.i += 1
 
     def jp(self):
-        # print(self.ss[-1])
         self.pb[int(self.ss[-1])] = jp_str(self.i)
         self.ss.pop()
 
@@ -199,9 +175,6 @@ class CodeGen:
     def op(self):
         t = next(self.addr_counter)
         self.pb[self.i] = '(' + self.ss[-2] + ', ' + self.ss[-3] + ', ' + self.ss[-1] + ', ' + str(t) + ')'
-
-        # print(self.ss[-2])
-
         self.ss.pop()
         self.ss.pop()
         self.ss.pop()
