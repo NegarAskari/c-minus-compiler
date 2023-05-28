@@ -8,26 +8,34 @@ PB_SIZE = 1000
 def add_str(a1, a2, r):
     return '(ADD, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
 
+
 def mult_str(a1, a2, r):
     return '(MULT, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
+
 
 def sub_str(a1, a2, r):
     return '(SUB, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
 
+
 def eq_str(a1, a2, r):
     return '(EQ, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
+
 
 def lt_str(a1, a2, r):
     return '(LT, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
 
+
 def assign_str(a, r):
     return '(ASSIGN, ' + str(a) + ', ' + str(r) + ', )'
+
 
 def jpf_str(a, l):
     return '(JPF, ' + str(a) + ', ' + str(l) + ', )'
 
+
 def jp_str(l):
     return '(JP, ' + str(l) + ', , )'
+
 
 def print_str(a):
     return '(PRINT, ' + str(a) + ', , )'
@@ -46,10 +54,10 @@ class CodeGen:
         """
              {ID/KEYWORD lexeme: {SYMBOL_TABLE_KEYS.ADDRESS: address (int), ...}}
         """
-        self.pb: List[str] = ['' for _ in range(PB_SIZE)]    # list of command strings in PB
-        self.i = 0      # index used for pb
-        self.ss: List[str] = []    # semantic stack (str)
-        self.bs: List[int] = []    # break stack (int) contains pairs (Ai, bi) = (repeat_address, break_exists) for each repeat
+        self.pb: List[str] = ['' for _ in range(PB_SIZE)]  # list of command strings in PB
+        self.i = 0  # index used for pb
+        self.ss: List[str] = []  # semantic stack (str)
+        self.bs: List[int] = []  # break stack (int)
         self.addr_counter = parser.addr_counter
 
         # init PB
@@ -89,7 +97,7 @@ class CodeGen:
 
     def allocate_array(self):
         for key in self.symbol_table:
-            if SYMBOL_TABLE_KEYS.ADDRESS in self.symbol_table[key] and\
+            if SYMBOL_TABLE_KEYS.ADDRESS in self.symbol_table[key] and \
                     self.symbol_table[key][SYMBOL_TABLE_KEYS.ADDRESS] == int(self.ss[-2]):
                 self.symbol_table[key][SYMBOL_TABLE_KEYS.ALLOCATED] = True
         self.pb[self.i] = assign_str('#0', self.ss[-2])
