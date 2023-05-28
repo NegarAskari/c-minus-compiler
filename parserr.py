@@ -1,24 +1,94 @@
 from anytree import Node
 from scanner import *
+from code_gen import *
 
-first_dict = { 'Declaration-list' : ['int', 'void'], 'Var-declaration-prime' : [';', '['], 'Fun-declaration-prime' : ['('], 'Type-specifier' : ['int', 'void'], 'Params' : ['int', 'void'], 'Param-list' : [','], 'Param-prime' : ['['], 'Compound-stmt' : ['{'], 'Expression-stmt' : ['break', ';', 'ID', '(', 'NUM'], 'Selection-stmt' : ['if'], 'Iteration-stmt' : ['repeat'], 'Return-stmt' : ['return'], 'Return-stmt-prime' : [';', 'ID', '(', 'NUM'], 'Expression' : ['ID', '(', 'NUM'], 'B' : ['='], 'H' : ['='], 'C' : ['<', '=='], 'Relop' : ['<', '=='], 'D' : ['+', '-'], 'Addop' : ['+', '-'], 'G' : ['*'], 'Factor' : ['(', 'ID', 'NUM'], 'Var-call-prime' : ['(', '['], 'Var-prime' : ['['], 'Factor-prime' : ['('], 'Factor-zegond' : ['(', 'NUM'], 'Args' : ['ID', '(', 'NUM'], 'Arg-list-prime' : [','], 'Declaration-initial' : ['int', 'void'], 'Declaration-prime' : ['(', ';', '['], 'Term' : ['(', 'ID', 'NUM'], 'Term-prime' : ['(', '*'], 'Term-zegond' : ['(', 'NUM'], 'Declaration' : ['int', 'void'], 'Param' : ['int', 'void'], 'Additive-expression' : ['(', 'ID', 'NUM'], 'Additive-expression-zegond' : ['(', 'NUM'], 'Simple-expression-zegond' : ['(', 'NUM'], 'Additive-expression-prime' : ['(', '*', '+', '-'], 'Program' : ['int', 'void'], 'Simple-expression-prime' : ['(', '*', '+', '-', '<', '=='], 'Arg-list' : ['ID', '(', 'NUM'], 'Statement' : ['break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat'], 'Statement-list' : ['break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat'] }
-follow_dict = { 'Program' : ['$'], 'Declaration-list' : ['break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', '}', 'repeat', '$'], 'Declaration' :['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '$'], 'Declaration-initial' :['[', '(', ';', ',', ')'], 'Declaration-prime' :['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '$'], 'Var-declaration-prime' :['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '$'], 'Fun-declaration-prime' :['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '$'], 'Type-specifier' :['ID'], 'Params' :[')'], 'Param-list' :[')'], 'Param' :[',', ')'], 'Param-prime' :[',', ')'], 'Compound-stmt' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', 'int', 'void', '$', '}'], 'Statement-list' :['}'], 'Statement' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'], 'Expression-stmt' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'], 'Selection-stmt' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'], 'Iteration-stmt' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'], 'Return-stmt' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'], 'Return-stmt-prime' :['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'], 'Expression' :[',', ')', ']', ';'], 'B' :[',', ')', ']', ';'], 'H' :[',', ')', ']', ';'], 'Simple-expression-zegond' :[',', ')', ']', ';'], 'Simple-expression-prime' :[',', ')', ']', ';'], 'C' :[',', ')', ']', ';'], 'Relop' :['(', 'ID', 'NUM'], 'Additive-expression' :[',', ')', ']', ';'], 'Additive-expression-prime' :['<', '==', ',', ')', ']', ';'], 'Additive-expression-zegond' :['<', '==', ',', ')', ']', ';'], 'D' :['<', '==', ',', ')', ']', ';'], 'Addop' :['(', 'ID', 'NUM'], 'Term' :['+', '-', '<', '==', ',', ')', ']', ';'], 'Term-prime' :['+', '-', '<', '==', ',', ')', ']', ';'], 'Term-zegond' :['+', '-', '<', '==', ',', ')', ']', ';'], 'G' :['+', '-', '<', '==', ',', ')', ']', ';'], 'Factor' :['*', '+', '-', '<', '==', ',', ')', ']', ';'], 'Var-call-prime' :['*', '+', '-', '<', '==', ',', ')', ']', ';'], 'Var-prime' :['*', '+', '-', '<', '==', ',', ')', ']', ';'], 'Factor-prime' :['*', '+', '-', '<', '==', ',', ')', ']', ';'], 'Factor-zegond' :['*', '+', '-', '<', '==', ',', ')', ']', ';'], 'Args' :[')'], 'Arg-list' :[')'], 'Arg-list-prime' :[')'] }
 
+first_dict = {'Declaration-list': ['int', 'void'], 'Var-declaration-prime': [';', '['], 'Fun-declaration-prime': ['('],
+              'Type-specifier': ['int', 'void'], 'Params': ['int', 'void'], 'Param-list': [','], 'Param-prime': ['['],
+              'Compound-stmt': ['{'], 'Expression-stmt': ['break', ';', 'ID', '(', 'NUM'], 'Selection-stmt': ['if'],
+              'Iteration-stmt': ['repeat'], 'Return-stmt': ['return'], 'Return-stmt-prime': [';', 'ID', '(', 'NUM'],
+              'Expression': ['ID', '(', 'NUM'], 'B': ['='], 'H': ['='], 'C': ['<', '=='], 'Relop': ['<', '=='],
+              'D': ['+', '-'], 'Addop': ['+', '-'], 'G': ['*'], 'Factor': ['(', 'ID', 'NUM'],
+              'Var-call-prime': ['(', '['], 'Var-prime': ['['], 'Factor-prime': ['('], 'Factor-zegond': ['(', 'NUM'],
+              'Args': ['ID', '(', 'NUM'], 'Arg-list-prime': [','], 'Declaration-initial': ['int', 'void'],
+              'Declaration-prime': ['(', ';', '['], 'Term': ['(', 'ID', 'NUM'], 'Term-prime': ['(', '*'],
+              'Term-zegond': ['(', 'NUM'], 'Declaration': ['int', 'void'], 'Param': ['int', 'void'],
+              'Additive-expression': ['(', 'ID', 'NUM'], 'Additive-expression-zegond': ['(', 'NUM'],
+              'Simple-expression-zegond': ['(', 'NUM'], 'Additive-expression-prime': ['(', '*', '+', '-'],
+              'Program': ['int', 'void'], 'Simple-expression-prime': ['(', '*', '+', '-', '<', '=='],
+              'Arg-list': ['ID', '(', 'NUM'],
+              'Statement': ['break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', 'output'],
+              'Statement-list': ['break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', 'output']}
+follow_dict = {'Program': ['$'],
+               'Declaration-list': ['break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', '}', 'repeat', '$', 'output'],
+               'Declaration': ['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '$'],
+               'Declaration-initial': ['[', '(', ';', ',', ')'],
+               'Declaration-prime': ['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '$'],
+               'Var-declaration-prime': ['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat',
+                                         '$'],
+               'Fun-declaration-prime': ['int', 'void', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat',
+                                         '$'], 'Type-specifier': ['ID'], 'Params': [')'], 'Param-list': [')'],
+               'Param': [',', ')'], 'Param-prime': [',', ')'],
+               'Compound-stmt': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', 'int',
+                                 'void', '$', '}'], 'Statement-list': ['}'],
+               'Statement': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}', 'output'],
+               'Expression-stmt': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'],
+               'Selection-stmt': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'],
+               'Iteration-stmt': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'],
+               'Return-stmt': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat', '}'],
+               'Return-stmt-prime': ['until', 'else', 'break', ';', 'ID', '(', 'NUM', 'if', 'return', '{', 'repeat',
+                                     '}'], 'Expression': [',', ')', ']', ';'], 'B': [',', ')', ']', ';'],
+               'H': [',', ')', ']', ';'], 'Simple-expression-zegond': [',', ')', ']', ';'],
+               'Simple-expression-prime': [',', ')', ']', ';'], 'C': [',', ')', ']', ';'], 'Relop': ['(', 'ID', 'NUM'],
+               'Additive-expression': [',', ')', ']', ';'],
+               'Additive-expression-prime': ['<', '==', ',', ')', ']', ';'],
+               'Additive-expression-zegond': ['<', '==', ',', ')', ']', ';'], 'D': ['<', '==', ',', ')', ']', ';'],
+               'Addop': ['(', 'ID', 'NUM'], 'Term': ['+', '-', '<', '==', ',', ')', ']', ';'],
+               'Term-prime': ['+', '-', '<', '==', ',', ')', ']', ';'],
+               'Term-zegond': ['+', '-', '<', '==', ',', ')', ']', ';'], 'G': ['+', '-', '<', '==', ',', ')', ']', ';'],
+               'Factor': ['*', '+', '-', '<', '==', ',', ')', ']', ';'],
+               'Var-call-prime': ['*', '+', '-', '<', '==', ',', ')', ']', ';'],
+               'Var-prime': ['*', '+', '-', '<', '==', ',', ')', ']', ';'],
+               'Factor-prime': ['*', '+', '-', '<', '==', ',', ')', ']', ';'],
+               'Factor-zegond': ['*', '+', '-', '<', '==', ',', ')', ']', ';'], 'Args': [')'], 'Arg-list': [')'],
+               'Arg-list-prime': [')']}
+
+
+class SymbolTable:
+    def __init__(self, addr_counter):
+        self.dict = dict()  # {ID/KEYWORD: dict()}
+        self.addr_counter = addr_counter
+
+    def initialize_with_keywords(self):
+        for key in ['break', 'else', 'if', 'int', 'repeat', 'return', 'until', 'void', 'output']:
+            self.dict[key] = dict()
+
+    def exists(self, name):
+        return name in self.dict
+
+    def insert(self, name):
+        self.dict[name] = {SYMBOL_TABLE_KEYS.ADDRESS: next(self.addr_counter),
+                           SYMBOL_TABLE_KEYS.ALLOCATED: False}
 
 
 class Parser:
     def __init__(self, input_file):
         self.stack = []
-        self.scanner = Scanner(input_file)
+        self.addr_counter = count(start=PB_SIZE, step=4)
+        self.symbol_table = SymbolTable(self.addr_counter)
+        self.scanner = Scanner(input_file, self.symbol_table)
         self.grammar = {'First': first_dict, 'Follow': follow_dict}
         self.errors = []
+        self.code_gen = CodeGen(parser=self)
 
     def next_token(self):
         self.current_token = self.scanner.get_next_token()
         self.terminal = self.current_token[1]
         if self.current_token[0] == 'NUM' or self.current_token[0] == 'ID':  # get terminal form
             self.terminal = self.current_token[0]
-    
+
+        # print(self.terminal)
+
     def add_error(self, error):
         self.errors.append(f"#{self.scanner.lineno} : syntax error, {error}")
 
@@ -26,22 +96,32 @@ class Parser:
         self.next_token()
         self.Program()
         while len(self.stack):
-            edge, parent = self.stack.pop()
-            if callable(edge):
-                edge(parent)
-            else:
-                if edge == self.terminal:
-                    lexeme = '$' if self.terminal == '$' else f"({self.current_token[0]}, {self.current_token[1]})"
-                    Node(lexeme, parent)
-                    self.next_token()
-                else:
-                    if self.terminal == '$':
-                        self.add_error("Unexpected EOF")
-                        self.stack = []
-                    else:    
-                        self.add_error(f"missing {edge}")
 
-    
+            # print(self.code_gen.ss)
+            # # print(len(self.code_gen.pb))
+            # print(self.code_gen.i)
+            # print(self.code_gen.pb)
+
+            pop = self.stack.pop()
+            if callable(pop):
+                # CodeGen
+                pop()
+            else:
+                edge, parent = pop
+                if callable(edge):
+                    edge(parent)
+                else:
+                    if edge == self.terminal:
+                        lexeme = '$' if self.terminal == '$' else f"({self.current_token[0]}, {self.current_token[1]})"
+                        Node(lexeme, parent)
+                        self.next_token()
+                    else:
+                        if self.terminal == '$':
+                            self.add_error("Unexpected EOF")
+                            self.stack = []
+                        else:
+                            self.add_error(f"missing {edge}")
+
     def error_handler(self, name, method, node):
         if self.terminal in self.grammar['Follow'][name]:
             self.add_error(f"missing {name}")
@@ -57,10 +137,10 @@ class Parser:
                 node.parent = None
                 self.stack.append((method, parent))
 
-
     def Program(self):
         self.root = Node("Program")
-        if self.terminal in self.grammar['First']['Declaration-list'] or self.terminal in self.grammar['Follow']['Program']:
+        if self.terminal in self.grammar['First']['Declaration-list'] or self.terminal in self.grammar['Follow'][
+            'Program']:
             self.stack.append(('$', self.root))
             self.stack.append((self.Declaration_list, self.root))
         else:
@@ -88,6 +168,7 @@ class Parser:
         node = Node('Declaration-initial', parent)
         if self.terminal in self.grammar['First']['Type-specifier']:
             self.stack.append(('ID', node))
+            self.stack.append(self.code_gen.pid)
             self.stack.append((self.Type_specifier, node))
         else:
             self.error_handler('Declaration-initial', self.Declaration_initial, node)
@@ -96,6 +177,7 @@ class Parser:
         node = Node('Declaration-prime', parent)
         if self.terminal in self.grammar['First']['Fun-declaration-prime']:
             self.stack.append((self.Fun_declaration_prime, node))
+            self.stack.append(self.code_gen.pop)
         elif self.terminal in self.grammar['First']['Var-declaration-prime']:
             self.stack.append((self.Var_declaration_prime, node))
         else:
@@ -104,11 +186,14 @@ class Parser:
     def Var_declaration_prime(self, parent):
         node = Node('Var-declaration-prime', parent)
         if self.terminal == ';':
+            self.stack.append(self.code_gen.allocate_var)
             self.stack.append((';', node))
         elif self.terminal == '[':
+            self.stack.append(self.code_gen.allocate_array)
             self.stack.append((';', node))
             self.stack.append((']', node))
             self.stack.append(('NUM', node))
+            self.stack.append(self.code_gen.pnum)
             self.stack.append(('[', node))
         else:
             self.error_handler('Var-declaration-prime', self.Var_declaration_prime, node)
@@ -159,6 +244,7 @@ class Parser:
         node = Node('Param', parent)
         if self.terminal in self.grammar['First']['Declaration-initial']:
             self.stack.append((self.Param_prime, node))
+            self.stack.append(self.code_gen.pop)
             self.stack.append((self.Declaration_initial, node))
         else:
             self.error_handler('Param', self.Param, node)
@@ -195,7 +281,15 @@ class Parser:
 
     def Statement(self, parent):
         node = Node('Statement', parent)
-        if self.terminal in self.grammar['First']['Expression-stmt']:
+        # print(self.terminal)
+        if self.terminal == 'output':
+            self.stack.append((';', node))
+            self.stack.append((')', node))
+            self.stack.append(self.code_gen.print)
+            self.stack.append((self.Expression, node))
+            self.stack.append(('(', node))
+            self.stack.append(('output', node))
+        elif self.terminal in self.grammar['First']['Expression-stmt']:
             self.stack.append((self.Expression_stmt, node))
         elif self.terminal in self.grammar['First']['Compound-stmt']:
             self.stack.append((self.Compound_stmt, node))
@@ -211,10 +305,12 @@ class Parser:
     def Expression_stmt(self, parent):
         node = Node('Expression-stmt', parent)
         if self.terminal in self.grammar['First']['Expression']:
+            self.stack.append(self.code_gen.pop)
             self.stack.append((';', node))
             self.stack.append((self.Expression, node))
         elif self.terminal == 'break':
             self.stack.append((';', node))
+            self.stack.append(self.code_gen.save_break)
             self.stack.append(('break', node))
         elif self.terminal == ';':
             self.stack.append((';', node))
@@ -224,10 +320,13 @@ class Parser:
     def Selection_stmt(self, parent):
         node = Node('Selection-stmt', parent)
         if self.terminal == 'if':
+            self.stack.append(self.code_gen.jp)
             self.stack.append((self.Statement, node))
+            self.stack.append(self.code_gen.jpf_save)
             self.stack.append(('else', node))
             self.stack.append((self.Statement, node))
             self.stack.append((')', node))
+            self.stack.append(self.code_gen.save)
             self.stack.append((self.Expression, node))
             self.stack.append(('(', node))
             self.stack.append(('if', node))
@@ -238,10 +337,12 @@ class Parser:
         node = Node('Iteration-stmt', parent)
         if self.terminal == 'repeat':
             self.stack.append((')', node))
+            self.stack.append(self.code_gen.until)
             self.stack.append((self.Expression, node))
             self.stack.append(('(', node))
             self.stack.append(('until', node))
             self.stack.append((self.Statement, node))
+            self.stack.append(self.code_gen.init_repeat)
             self.stack.append(('repeat', node))
         else:
             self.error_handler('Iteration-stmt', self.Iteration_stmt, node)
@@ -271,20 +372,25 @@ class Parser:
         elif self.terminal == 'ID':
             self.stack.append((self.B, node))
             self.stack.append(('ID', node))
+            self.stack.append(self.code_gen.pid)
         else:
             self.error_handler('Expression', self.Expression, node)
 
     def B(self, parent):
         node = Node('B', parent)
         if self.terminal == '=':
+            self.stack.append(self.code_gen.assign)
             self.stack.append((self.Expression, node))
+            self.stack.append(self.code_gen.allocate_var_assign)
             self.stack.append(('=', node))
         elif self.terminal == '[':
             self.stack.append((self.H, node))
             self.stack.append((']', node))
+            self.stack.append(self.code_gen.offset)
             self.stack.append((self.Expression, node))
             self.stack.append(('[', node))
-        elif self.terminal in self.grammar['First']['Simple-expression-prime'] or self.terminal in self.grammar['Follow']['B']:
+        elif self.terminal in self.grammar['First']['Simple-expression-prime'] or self.terminal in \
+                self.grammar['Follow']['B']:
             self.stack.append((self.Simple_expression_prime, node))
         else:
             self.error_handler('B', self.B, node)
@@ -292,9 +398,12 @@ class Parser:
     def H(self, parent):
         node = Node('H', parent)
         if self.terminal == '=':
+            self.stack.append(self.code_gen.assign)
             self.stack.append((self.Expression, node))
+            # self.stack.append(self.code_gen.allocate_array)
             self.stack.append(('=', node))
-        elif self.terminal in self.grammar['First']['G'] or self.terminal in self.grammar['First']['D'] or self.terminal in self.grammar['First']['C'] or self.terminal in self.grammar['Follow']['H']:
+        elif self.terminal in self.grammar['First']['G'] or self.terminal in self.grammar['First'][
+            'D'] or self.terminal in self.grammar['First']['C'] or self.terminal in self.grammar['Follow']['H']:
             self.stack.append((self.C, node))
             self.stack.append((self.D, node))
             self.stack.append((self.G, node))
@@ -311,7 +420,8 @@ class Parser:
 
     def Simple_expression_prime(self, parent):
         node = Node('Simple-expression-prime', parent)
-        if self.terminal in self.grammar['First']['Additive-expression-prime'] or self.terminal in self.grammar['First']['C'] or self.terminal in self.grammar['Follow']['Simple-expression-prime']:
+        if self.terminal in self.grammar['First']['Additive-expression-prime'] or self.terminal in \
+                self.grammar['First']['C'] or self.terminal in self.grammar['Follow']['Simple-expression-prime']:
             self.stack.append((self.C, node))
             self.stack.append((self.Additive_expression_prime, node))
         else:
@@ -320,6 +430,7 @@ class Parser:
     def C(self, parent):
         node = Node('C', parent)
         if self.terminal in self.grammar['First']['Relop']:
+            self.stack.append(self.code_gen.op)
             self.stack.append((self.Additive_expression, node))
             self.stack.append((self.Relop, node))
         elif self.terminal in self.grammar['Follow']['C']:
@@ -331,8 +442,11 @@ class Parser:
         node = Node('Relop', parent)
         if self.terminal == '<':
             self.stack.append(('<', node))
+            self.stack.append(self.code_gen.push_lt)
         elif self.terminal == '==':
+            # print(1)
             self.stack.append(('==', node))
+            self.stack.append(self.code_gen.push_eq)
         else:
             self.error_handler('Relop', self.Relop, node)
 
@@ -346,7 +460,8 @@ class Parser:
 
     def Additive_expression_prime(self, parent):
         node = Node('Additive-expression-prime', parent)
-        if self.terminal in self.grammar['First']['Term-prime'] or self.terminal in self.grammar['First']['D'] or self.terminal in self.grammar['Follow']['Additive-expression-prime']:
+        if self.terminal in self.grammar['First']['Term-prime'] or self.terminal in self.grammar['First'][
+            'D'] or self.terminal in self.grammar['Follow']['Additive-expression-prime']:
             self.stack.append((self.D, node))
             self.stack.append((self.Term_prime, node))
         else:
@@ -364,6 +479,7 @@ class Parser:
         node = Node('D', parent)
         if self.terminal in self.grammar['First']['Addop']:
             self.stack.append((self.D, node))
+            self.stack.append(self.code_gen.op)
             self.stack.append((self.Term, node))
             self.stack.append((self.Addop, node))
         elif self.terminal in self.grammar['Follow']['D']:
@@ -375,8 +491,10 @@ class Parser:
         node = Node('Addop', parent)
         if self.terminal == '+':
             self.stack.append(('+', node))
+            self.stack.append(self.code_gen.push_add)
         elif self.terminal == '-':
             self.stack.append(('-', node))
+            self.stack.append(self.code_gen.push_sub)
         else:
             self.error_handler('Addop', self.Addop, node)
 
@@ -390,7 +508,8 @@ class Parser:
 
     def Term_prime(self, parent):
         node = Node('Term-prime', parent)
-        if self.terminal in self.grammar['First']['Factor-prime'] or self.terminal in self.grammar['First']['G'] or self.terminal in self.grammar['Follow']['Term-prime']:
+        if self.terminal in self.grammar['First']['Factor-prime'] or self.terminal in self.grammar['First'][
+            'G'] or self.terminal in self.grammar['Follow']['Term-prime']:
             self.stack.append((self.G, node))
             self.stack.append((self.Factor_prime, node))
         else:
@@ -408,6 +527,7 @@ class Parser:
         node = Node('G', parent)
         if self.terminal == '*':
             self.stack.append((self.G, node))
+            self.stack.append(self.code_gen.mult)
             self.stack.append((self.Factor, node))
             self.stack.append(('*', node))
         elif self.terminal in self.grammar['Follow']['G']:
@@ -424,8 +544,10 @@ class Parser:
         elif self.terminal == 'ID':
             self.stack.append((self.Var_call_prime, node))
             self.stack.append(('ID', node))
+            self.stack.append(self.code_gen.pid)
         elif self.terminal == 'NUM':
             self.stack.append(('NUM', node))
+            self.stack.append(self.code_gen.pnum)
         else:
             self.error_handler('Factor', self.Factor, node)
 
@@ -435,7 +557,8 @@ class Parser:
             self.stack.append((')', node))
             self.stack.append((self.Args, node))
             self.stack.append(('(', node))
-        elif self.terminal in self.grammar['First']['Var-prime'] or self.terminal in self.grammar['Follow']['Var-call-prime']:
+        elif self.terminal in self.grammar['First']['Var-prime'] or self.terminal in self.grammar['Follow'][
+            'Var-call-prime']:
             self.stack.append((self.Var_prime, node))
         else:
             self.error_handler('Var-call-prime', self.Var_call_prime, node)
@@ -444,6 +567,7 @@ class Parser:
         node = Node('Var-prime', parent)
         if self.terminal == '[':
             self.stack.append((']', node))
+            self.stack.append(self.code_gen.offset)
             self.stack.append((self.Expression, node))
             self.stack.append(('[', node))
         elif self.terminal in self.grammar['Follow']['Var-prime']:
@@ -470,6 +594,7 @@ class Parser:
             self.stack.append(('(', node))
         elif self.terminal == 'NUM':
             self.stack.append(('NUM', node))
+            self.stack.append(self.code_gen.pnum)
         else:
             self.error_handler('Factor-zegond', self.Factor_zegond, node)
 
