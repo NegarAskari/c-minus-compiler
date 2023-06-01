@@ -1,6 +1,7 @@
 from anytree import Node
 from scanner import *
 from code_gen import *
+from semantic import *
 
 
 first_dict = {'Declaration-list': ['int', 'void'], 'Var-declaration-prime': [';', '['], 'Fun-declaration-prime': ['('],
@@ -68,7 +69,10 @@ class SymbolTable:
 
     def insert(self, name):
         self.dict[name] = {SYMBOL_TABLE_KEYS.ADDRESS: next(self.addr_counter),
-                           SYMBOL_TABLE_KEYS.ALLOCATED: False}
+                           SYMBOL_TABLE_KEYS.ALLOCATED: False,
+                           SYMBOL_TABLE_KEYS.SCOPE: -1,
+                           SYMBOL_TABLE_KEYS.PARAMETERS: [],
+                           SYMBOL_TABLE_KEYS.TYPE: 'int'}
 
 
 class Parser:
@@ -80,6 +84,7 @@ class Parser:
         self.grammar = {'First': first_dict, 'Follow': follow_dict}
         self.errors = []
         self.code_gen = CodeGen(parser=self)
+        self.semantic_check = SemanticCheck(parser=self)
 
     def next_token(self):
         self.current_token = self.scanner.get_next_token()
@@ -97,8 +102,11 @@ class Parser:
 
             pop = self.stack.pop()
             if callable(pop):
-                # CodeGen
-                pop()
+                # CodeGen or SemanticCeck
+                try:
+                    pop()
+                except:
+                    self.code_gen.disable = True
             else:
                 edge, parent = pop
                 if callable(edge):
@@ -161,6 +169,8 @@ class Parser:
         node = Node('Declaration-initial', parent)
         if self.terminal in self.grammar['First']['Type-specifier']:
             self.stack.append(('ID', node))
+            self.stack.append(self.semantic_check.set_func_id)
+            self.stack.append(self.semantic_check.define)
             self.stack.append(self.code_gen.pid)
             self.stack.append((self.Type_specifier, node))
         else:
@@ -171,8 +181,10 @@ class Parser:
         if self.terminal in self.grammar['First']['Fun-declaration-prime']:
             self.stack.append((self.Fun_declaration_prime, node))
             self.stack.append(self.code_gen.pop)
+            self.stack.append(self.semantic_check.funcion_declaration)
         elif self.terminal in self.grammar['First']['Var-declaration-prime']:
             self.stack.append((self.Var_declaration_prime, node))
+            self.stack.append(self.semantic_check.variable_declaration)
         else:
             self.error_handler('Declaration-prime', self.Declaration_prime, node)
 
@@ -182,6 +194,7 @@ class Parser:
             self.stack.append(self.code_gen.allocate_var)
             self.stack.append((';', node))
         elif self.terminal == '[':
+            self.stack.append(self.semantic_check.define_array)
             self.stack.append(self.code_gen.allocate_array)
             self.stack.append((';', node))
             self.stack.append((']', node))
@@ -195,9 +208,11 @@ class Parser:
         node = Node('Fun-declaration-prime', parent)
         if self.terminal == '(':
             self.stack.append((self.Compound_stmt, node))
+            self.stack.append(self.semantic_check.param_out)
             self.stack.append((')', node))
             self.stack.append((self.Params, node))
             self.stack.append(('(', node))
+            self.stack.append(self.semantic_check.param_in)
         else:
             self.error_handler('Fun-declaration-prime', self.Fun_declaration_prime, node)
 
@@ -206,6 +221,7 @@ class Parser:
         if self.terminal == 'int':
             self.stack.append(('int', node))
         elif self.terminal == 'void':
+            self.stack.append(self.semantic_check.insert_void)
             self.stack.append(('void', node))
         else:
             self.error_handler('Type-specifier', self.Type_specifier, node)
@@ -213,10 +229,13 @@ class Parser:
     def Params(self, parent):
         node = Node('Params', parent)
         if self.terminal == 'int':
+            self.stack.append(self.semantic_check.scope_dec)
             self.stack.append((self.Param_list, node))
             self.stack.append((self.Param_prime, node))
             self.stack.append(('ID', node))
+            self.stack.append(self.semantic_check.define)
             self.stack.append(('int', node))
+            self.stack.append(self.semantic_check.scope_begin)
         elif self.terminal == 'void':
             self.stack.append(('void', node))
         else:
@@ -247,7 +266,9 @@ class Parser:
         if self.terminal == '[':
             self.stack.append((']', node))
             self.stack.append(('[', node))
+            self.stack.append(self.semantic_check.array_param)
         elif self.terminal in self.grammar['Follow']['Param-prime']:
+            self.stack.append(self.semantic_check.int_param)
             Node('epsilon', node)
         else:
             self.error_handler('Param-prime', self.Param_prime, node)
@@ -255,9 +276,11 @@ class Parser:
     def Compound_stmt(self, parent):
         node = Node('Compound-stmt', parent)
         if self.terminal == '{':
+            self.stack.append(self.semantic_check.scope_end)
             self.stack.append(('}', node))
             self.stack.append((self.Statement_list, node))
             self.stack.append((self.Declaration_list, node))
+            self.stack.append(self.semantic_check.scope_begin)
             self.stack.append(('{', node))
         else:
             self.error_handler('Compound-stmt', self.Compound_stmt, node)
@@ -303,6 +326,7 @@ class Parser:
         elif self.terminal == 'break':
             self.stack.append((';', node))
             self.stack.append(self.code_gen.save_break)
+            self.stack.append(self.semantic_check.check_break)
             self.stack.append(('break', node))
         elif self.terminal == ';':
             self.stack.append((';', node))
@@ -332,9 +356,11 @@ class Parser:
             self.stack.append(self.code_gen.until)
             self.stack.append((self.Expression, node))
             self.stack.append(('(', node))
+            self.stack.append(self.semantic_check.until)
             self.stack.append(('until', node))
             self.stack.append((self.Statement, node))
             self.stack.append(self.code_gen.init_repeat)
+            self.stack.append(self.semantic_check.repeat)
             self.stack.append(('repeat', node))
         else:
             self.error_handler('Iteration-stmt', self.Iteration_stmt, node)
@@ -363,7 +389,10 @@ class Parser:
             self.stack.append((self.Simple_expression_zegond, node))
         elif self.terminal == 'ID':
             self.stack.append((self.B, node))
+            self.stack.append(self.semantic_check.update_type)
             self.stack.append(('ID', node))
+            self.stack.append(self.semantic_check.save_type)
+            self.stack.append(self.semantic_check.check_defined)
             self.stack.append(self.code_gen.pid)
         else:
             self.error_handler('Expression', self.Expression, node)
@@ -374,16 +403,22 @@ class Parser:
             self.stack.append(self.code_gen.assign)
             self.stack.append((self.Expression, node))
             self.stack.append(self.code_gen.allocate_var_assign)
+            self.stack.append(self.semantic_check.check_arg)
+            self.stack.append(self.semantic_check.match_type)
             self.stack.append(('=', node))
         elif self.terminal == '[':
             self.stack.append((self.H, node))
+            self.stack.append(self.semantic_check.array_out)
             self.stack.append((']', node))
             self.stack.append(self.code_gen.offset)
             self.stack.append((self.Expression, node))
             self.stack.append(('[', node))
+            self.stack.append(self.semantic_check.array_in)
+            self.stack.append(self.semantic_check.check_arg_int)
         elif self.terminal in self.grammar['First']['Simple-expression-prime'] or self.terminal in \
                 self.grammar['Follow']['B']:
             self.stack.append((self.Simple_expression_prime, node))
+            self.stack.append(self.semantic_check.check_arg)
         else:
             self.error_handler('B', self.B, node)
 
@@ -393,6 +428,7 @@ class Parser:
             self.stack.append(self.code_gen.assign)
             self.stack.append((self.Expression, node))
             # self.stack.append(self.code_gen.allocate_array)
+            self.stack.append(self.semantic_check.match_type)
             self.stack.append(('=', node))
         elif self.terminal in self.grammar['First']['G'] or self.terminal in self.grammar['First'][
             'D'] or self.terminal in self.grammar['First']['C'] or self.terminal in self.grammar['Follow']['H']:
@@ -424,6 +460,7 @@ class Parser:
         if self.terminal in self.grammar['First']['Relop']:
             self.stack.append(self.code_gen.op)
             self.stack.append((self.Additive_expression, node))
+            self.stack.append(self.semantic_check.match_type)
             self.stack.append((self.Relop, node))
         elif self.terminal in self.grammar['Follow']['C']:
             Node('epsilon', node)
@@ -472,6 +509,7 @@ class Parser:
             self.stack.append((self.D, node))
             self.stack.append(self.code_gen.op)
             self.stack.append((self.Term, node))
+            self.stack.append(self.semantic_check.match_type)
             self.stack.append((self.Addop, node))
         elif self.terminal in self.grammar['Follow']['D']:
             Node('epsilon', node)
@@ -520,6 +558,7 @@ class Parser:
             self.stack.append((self.G, node))
             self.stack.append(self.code_gen.mult)
             self.stack.append((self.Factor, node))
+            self.stack.append(self.semantic_check.match_type)
             self.stack.append(('*', node))
         elif self.terminal in self.grammar['Follow']['G']:
             Node('epsilon', node)
@@ -534,9 +573,13 @@ class Parser:
             self.stack.append(('(', node))
         elif self.terminal == 'ID':
             self.stack.append((self.Var_call_prime, node))
+            self.stack.append(self.semantic_check.update_type)
             self.stack.append(('ID', node))
+            self.stack.append(self.semantic_check.save_type)
+            self.stack.append(self.semantic_check.check_defined)
             self.stack.append(self.code_gen.pid)
         elif self.terminal == 'NUM':
+            self.stack.append(self.semantic_check.int_type)
             self.stack.append(('NUM', node))
             self.stack.append(self.code_gen.pnum)
         else:
@@ -557,10 +600,12 @@ class Parser:
     def Var_prime(self, parent):
         node = Node('Var-prime', parent)
         if self.terminal == '[':
+            self.stack.append(self.semantic_check.array_out)
             self.stack.append((']', node))
             self.stack.append(self.code_gen.offset)
             self.stack.append((self.Expression, node))
             self.stack.append(('[', node))
+            self.stack.append(self.semantic_check.array_in)
         elif self.terminal in self.grammar['Follow']['Var-prime']:
             Node('epsilon', node)
         else:
@@ -584,7 +629,9 @@ class Parser:
             self.stack.append((self.Expression, node))
             self.stack.append(('(', node))
         elif self.terminal == 'NUM':
+            self.stack.append(self.semantic_check.int_type)
             self.stack.append(('NUM', node))
+            self.stack.append(self.semantic_check.check_arg_int)
             self.stack.append(self.code_gen.pnum)
         else:
             self.error_handler('Factor-zegond', self.Factor_zegond, node)
@@ -592,9 +639,12 @@ class Parser:
     def Args(self, parent):
         node = Node('Args', parent)
         if self.terminal in self.grammar['First']['Arg-list']:
+            self.stack.append(self.semantic_check.args_out)
             self.stack.append((self.Arg_list, node))
+            self.stack.append(self.semantic_check.args_in)
         elif self.terminal in self.grammar['Follow']['Args']:
             Node('epsilon', node)
+            self.stack.append(self.semantic_check.no_args)
         else:
             self.error_handler('Args', self.Args, node)
 
