@@ -95,12 +95,12 @@ class Parser:
         self.Program()
         while len(self.stack):
 
-            pop = self.stack.pop()
-            if callable(pop):
+            popped = self.stack.pop()
+            if callable(popped):
                 # CodeGen
-                pop()
+                popped()
             else:
-                edge, parent = pop
+                edge, parent = popped
                 if callable(edge):
                     edge(parent)
                 else:
@@ -169,8 +169,9 @@ class Parser:
     def Declaration_prime(self, parent):
         node = Node('Declaration-prime', parent)
         if self.terminal in self.grammar['First']['Fun-declaration-prime']:
-            self.stack.append(self.code_gen.pop)
+            # self.stack.append(self.code_gen.pop)
             self.stack.append((self.Fun_declaration_prime, node))
+            # self.stack.append(self.code_gen.pop)
             self.stack.append(self.code_gen.func_declare)
         elif self.terminal in self.grammar['First']['Var-declaration-prime']:
             self.stack.append((self.Var_declaration_prime, node))
@@ -195,6 +196,8 @@ class Parser:
     def Fun_declaration_prime(self, parent):
         node = Node('Fun-declaration-prime', parent)
         if self.terminal == '(':
+            self.stack.append(self.code_gen.pop_func_id)
+            self.stack.append(self.code_gen.return_)
             self.stack.append((self.Compound_stmt, node))
             self.stack.append((')', node))
             self.stack.append((self.Params, node))
@@ -218,6 +221,7 @@ class Parser:
             self.stack.append((self.Param_prime, node))
             self.stack.append(self.code_gen.add_param)
             self.stack.append(('ID', node))
+            self.stack.append(self.code_gen.pid)
             self.stack.append(('int', node))
         elif self.terminal == 'void':
             self.stack.append(('void', node))
@@ -353,8 +357,10 @@ class Parser:
         node = Node('Return-stmt-prime', parent)
         if self.terminal in self.grammar['First']['Expression']:
             self.stack.append((';', node))
+            self.stack.append(self.code_gen.return_val)
             self.stack.append((self.Expression, node))
         elif self.terminal == ';':
+            self.stack.append(self.code_gen.return_)
             self.stack.append((';', node))
         else:
             self.error_handler('Return-stmt-prime', self.Return_stmt_prime, node)
