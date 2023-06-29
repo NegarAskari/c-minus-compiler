@@ -13,18 +13,6 @@ def mult_str(a1, a2, r):
     return '(MULT, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
 
 
-def sub_str(a1, a2, r):
-    return '(SUB, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
-
-
-def eq_str(a1, a2, r):
-    return '(EQ, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
-
-
-def lt_str(a1, a2, r):
-    return '(LT, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
-
-
 def assign_str(a, r):
     return '(ASSIGN, ' + str(a) + ', ' + str(r) + ', )'
 
@@ -44,6 +32,35 @@ def print_str(a):
 class SYMBOL_TABLE_KEYS(str, Enum):
     ADDRESS = 'address'
     ALLOCATED = 'allocated'
+    # TYPE = 'type'
+
+class FUNC_TABLE_KEYS(str, Enum):
+    CALL_ADDRS = 'CALL_ADDRS'
+    FUNC_ADDR = 'FUNC_ADDR'
+    PARAMS_ADDRS = 'PARAMS_ADDRS'
+
+
+class FuncTable:
+    # func_id = str(self.symbol_table[func_name][SYMBOL_TABLE_KEYS.ADDRESS])
+
+    def __init__(self):
+        self.dict = dict()  # {func_id: {FUNC_TABLE_KEYS.CALL_ADDRS: [], FUNC_TABLE_KEYS.FUNC_ADDR: func_addr}}
+
+    def exists(self, func_id):
+        return func_id in self.dict
+
+    def insert(self, func_id):
+        self.dict[func_id] = {FUNC_TABLE_KEYS.CALL_ADDRS: []}
+
+    def append_call_addr(self, func_id, addr):
+        self.dict[func_id][FUNC_TABLE_KEYS.CALL_ADDRS] = self.dict[func_id][FUNC_TABLE_KEYS.CALL_ADDRS] + [addr]
+
+    def set_func_addr(self, func_id, func_addr):
+        # set i in PB (start of func in PB)
+        self.dict[func_id][FUNC_TABLE_KEYS.FUNC_ADDR] = func_addr
+
+    def append_param_addr(self, func_id, param_addr):
+        self.dict[func_id][FUNC_TABLE_KEYS.PARAMS_ADDRS] = self.dict[func_id][FUNC_TABLE_KEYS.PARAMS_ADDRS] + [param_addr]
 
 
 class CodeGen:
@@ -60,9 +77,45 @@ class CodeGen:
         self.bs: List[int] = []  # break stack (int)
         self.addr_counter = parser.addr_counter
 
+        self.func_table = FuncTable()
+        self.func_id = ''
+        self.arg_count = 0
+
         # init PB
         self.pb[0] = jp_str(1)
         self.i += 1
+
+    def func_declare(self):
+        self.func_id = self.ss[-1]
+        self.func_table.insert(self.func_id)
+        self.func_table.set_func_addr(self.func_id, self.i)
+
+    def add_param(self):
+        param_addr = self.ss[-1]
+        self.func_table.append_param_addr(self.func_id, param_addr)
+        self.ss.pop()
+
+    def init_call(self):
+        self.func_id = self.ss[-1]
+        self.func_table.append_call_addr(self.func_id, self.i)
+
+        self.arg_count = 0
+
+    def call_after_args(self):
+
+        self.pb[self.i] = jp_str(self.func_table.dict[self.func_id][FUNC_TABLE_KEYS.FUNC_ADDR])
+        self.i += 1
+
+    def add_arg(self):
+        expression = self.ss[-1]
+        self.pb[self.i] = assign_str(expression,
+                                     self.func_table.dict[self.func_id][FUNC_TABLE_KEYS.PARAMS_ADDRS][self.arg_count])
+        self.i += 1
+        self.arg_count += 1
+        self.ss.pop()
+
+    def return_(self):
+        #TODO
 
     def pid(self):
         id_lexeme = self.parser.current_token[1]
