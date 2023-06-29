@@ -169,8 +169,9 @@ class Parser:
     def Declaration_prime(self, parent):
         node = Node('Declaration-prime', parent)
         if self.terminal in self.grammar['First']['Fun-declaration-prime']:
-            self.stack.append((self.Fun_declaration_prime, node))
             self.stack.append(self.code_gen.pop)
+            self.stack.append((self.Fun_declaration_prime, node))
+            self.stack.append(self.code_gen.func_declare)
         elif self.terminal in self.grammar['First']['Var-declaration-prime']:
             self.stack.append((self.Var_declaration_prime, node))
         else:
@@ -215,6 +216,7 @@ class Parser:
         if self.terminal == 'int':
             self.stack.append((self.Param_list, node))
             self.stack.append((self.Param_prime, node))
+            self.stack.append(self.code_gen.add_param)
             self.stack.append(('ID', node))
             self.stack.append(('int', node))
         elif self.terminal == 'void':
@@ -237,7 +239,7 @@ class Parser:
         node = Node('Param', parent)
         if self.terminal in self.grammar['First']['Declaration-initial']:
             self.stack.append((self.Param_prime, node))
-            self.stack.append(self.code_gen.pop)
+            self.stack.append(self.code_gen.add_param)
             self.stack.append((self.Declaration_initial, node))
         else:
             self.error_handler('Param', self.Param, node)
@@ -546,7 +548,9 @@ class Parser:
         node = Node('Var-call-prime', parent)
         if self.terminal == '(':
             self.stack.append((')', node))
+            self.stack.append(self.code_gen.call_after_args)
             self.stack.append((self.Args, node))
+            self.stack.append(self.code_gen.init_call)
             self.stack.append(('(', node))
         elif self.terminal in self.grammar['First']['Var-prime'] or self.terminal in self.grammar['Follow'][
             'Var-call-prime']:
@@ -570,7 +574,9 @@ class Parser:
         node = Node('Factor-prime', parent)
         if self.terminal == '(':
             self.stack.append((')', node))
+            self.stack.append(self.code_gen.call_after_args)
             self.stack.append((self.Args, node))
+            self.stack.append(self.code_gen.init_call)
             self.stack.append(('(', node))
         elif self.terminal in self.grammar['Follow']['Factor-prime']:
             Node('epsilon', node)
@@ -602,6 +608,7 @@ class Parser:
         node = Node('Arg-list', parent)
         if self.terminal in self.grammar['First']['Expression']:
             self.stack.append((self.Arg_list_prime, node))
+            self.stack.append(self.code_gen.add_arg)
             self.stack.append((self.Expression, node))
         else:
             self.error_handler('Arg-list', self.Arg_list, node)
@@ -610,6 +617,7 @@ class Parser:
         node = Node('Arg-list-prime', parent)
         if self.terminal == ',':
             self.stack.append((self.Arg_list_prime, node))
+            self.stack.append(self.code_gen.add_arg)
             self.stack.append((self.Expression, node))
             self.stack.append((',', node))
         elif self.terminal in self.grammar['Follow']['Arg-list-prime']:
