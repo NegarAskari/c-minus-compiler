@@ -38,6 +38,8 @@ class FUNC_TABLE_KEYS(str, Enum):
     CALL_ADDRS = 'CALL_ADDRS'
     FUNC_ADDR = 'FUNC_ADDR'
     PARAMS_ADDRS = 'PARAMS_ADDRS'
+    RETURN_ADDR = 'RETURN_ADDR'
+    RETURN_VAL = 'RETURN_VAL'
 
 
 class FuncTable:
@@ -50,7 +52,7 @@ class FuncTable:
         return func_id in self.dict
 
     def insert(self, func_id):
-        self.dict[func_id] = {FUNC_TABLE_KEYS.CALL_ADDRS: []}
+        self.dict[func_id] = {FUNC_TABLE_KEYS.CALL_ADDRS: [], FUNC_TABLE_KEYS.PARAMS_ADDRS: []}
 
     def append_call_addr(self, func_id, addr):
         self.dict[func_id][FUNC_TABLE_KEYS.CALL_ADDRS] = self.dict[func_id][FUNC_TABLE_KEYS.CALL_ADDRS] + [addr]
@@ -61,6 +63,12 @@ class FuncTable:
 
     def append_param_addr(self, func_id, param_addr):
         self.dict[func_id][FUNC_TABLE_KEYS.PARAMS_ADDRS] = self.dict[func_id][FUNC_TABLE_KEYS.PARAMS_ADDRS] + [param_addr]
+
+    def set_return_addr(self, func_id, return_addr):
+        self.dict[func_id][FUNC_TABLE_KEYS.RETURN_ADDR] = return_addr
+
+    def set_return_val(self, func_id, return_val):
+        self.dict[func_id][FUNC_TABLE_KEYS.RETURN_VAL] = return_val
 
 
 class CodeGen:
@@ -78,7 +86,7 @@ class CodeGen:
         self.addr_counter = parser.addr_counter
 
         self.func_table = FuncTable()
-        self.func_id = ''
+        self.func_id = []   # func_ids stack
         self.arg_count = 0
 
         # init PB
@@ -86,36 +94,60 @@ class CodeGen:
         self.i += 1
 
     def func_declare(self):
-        self.func_id = self.ss[-1]
-        self.func_table.insert(self.func_id)
-        self.func_table.set_func_addr(self.func_id, self.i)
+        self.func_id.append(self.ss[-1])
+        self.func_table.insert(self.func_id[-1])
+        self.func_table.set_func_addr(self.func_id[-1], self.i)
+        self.func_table.set_return_addr(self.func_id[-1], next(self.addr_counter))
+        self.func_table.set_return_val(self.func_id[-1], next(self.addr_counter))
+        if self.is_main():
+            self.pb[0] = jp_str(self.i)
+        self.ss.pop()
+
+    def is_main(self):
+        return ('main' in self.symbol_table) and \
+            (str(self.symbol_table['main'][SYMBOL_TABLE_KEYS.ADDRESS]) == self.func_id[-1])
 
     def add_param(self):
         param_addr = self.ss[-1]
-        self.func_table.append_param_addr(self.func_id, param_addr)
+        self.func_table.append_param_addr(self.func_id[-1], param_addr)
         self.ss.pop()
 
-    def init_call(self):
-        self.func_id = self.ss[-1]
-        self.func_table.append_call_addr(self.func_id, self.i)
+    def pop_func_id(self):
+        self.func_id.pop()
 
+    def init_call(self):
+        self.func_id.append(self.ss[-1])
+        self.func_table.append_call_addr(self.func_id[-1], self.i)
+        self.ss.pop()
         self.arg_count = 0
 
     def call_after_args(self):
-
-        self.pb[self.i] = jp_str(self.func_table.dict[self.func_id][FUNC_TABLE_KEYS.FUNC_ADDR])
+        self.pb[self.i] = assign_str('#' + str(self.i + 2), self.func_table.dict[self.func_id[-1]][FUNC_TABLE_KEYS.RETURN_ADDR])
         self.i += 1
+        self.pb[self.i] = jp_str(self.func_table.dict[self.func_id[-1]][FUNC_TABLE_KEYS.FUNC_ADDR])
+        self.i += 1
+        self.ss.append(str(self.func_table.dict[self.func_id[-1]][FUNC_TABLE_KEYS.RETURN_VAL]))
+        self.pop_func_id()
 
     def add_arg(self):
         expression = self.ss[-1]
         self.pb[self.i] = assign_str(expression,
-                                     self.func_table.dict[self.func_id][FUNC_TABLE_KEYS.PARAMS_ADDRS][self.arg_count])
+                                     self.func_table.dict[self.func_id[-1]][FUNC_TABLE_KEYS.PARAMS_ADDRS][self.arg_count])
         self.i += 1
         self.arg_count += 1
         self.ss.pop()
 
     def return_(self):
-        #TODO
+        if not self.is_main():
+            self.pb[self.i] = jp_str('@' + str(self.func_table.dict[self.func_id[-1]][FUNC_TABLE_KEYS.RETURN_ADDR]))
+            self.i += 1
+
+    def return_val(self):
+        self.pb[self.i] = assign_str(self.ss[-1], self.func_table.dict[self.func_id[-1]][FUNC_TABLE_KEYS.RETURN_VAL])
+        self.i += 1
+        self.ss.pop()
+        self.return_()
+
 
     def pid(self):
         id_lexeme = self.parser.current_token[1]
