@@ -116,6 +116,9 @@ class CodeGen:
         self.func_id.pop()
 
     def init_call(self):
+        if self.func_id[-1] == self.ss[-1]:
+            self.pb[self.i] = jp_str('#1000')
+            self.i += 1
         self.func_id.append(self.ss[-1])
         self.func_table.append_call_addr(self.func_id[-1], self.i)
         self.ss.pop()
