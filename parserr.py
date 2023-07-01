@@ -98,7 +98,7 @@ class Parser:
             popped = self.stack.pop()
             if callable(popped):
 
-                print(self.code_gen.func_id)
+                #print(self.code_gen.func_id)
 
                 # CodeGen
                 popped()

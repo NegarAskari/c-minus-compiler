@@ -5,28 +5,40 @@ from collections import OrderedDict
 
 PB_SIZE = 1000
 
+def correct_format(s):
+    if str(s).startswith('#@'):
+        s = s[2:]
+    return s
 
 def add_str(a1, a2, r):
+    a1 = correct_format(a1)
+    a2 = correct_format(a2)
     return '(ADD, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
 
 
 def mult_str(a1, a2, r):
+    a1 = correct_format(a1)
+    a2 = correct_format(a2)
     return '(MULT, ' + str(a1) + ', ' + str(a2) + ', ' + str(r) + ')'
 
 
 def assign_str(a, r):
+    a = correct_format(a)
     return '(ASSIGN, ' + str(a) + ', ' + str(r) + ', )'
 
 
 def jpf_str(a, l):
+    a = correct_format(a)
     return '(JPF, ' + str(a) + ', ' + str(l) + ', )'
 
 
 def jp_str(l):
+    l = correct_format(l)
     return '(JP, ' + str(l) + ', , )'
 
 
 def print_str(a):
+    a = correct_format(a)
     return '(PRINT, ' + str(a) + ', , )'
 
 
@@ -219,6 +231,9 @@ class CodeGen:
         self.ss.pop()
 
     def allocate_array(self):
+        if str(self.ss[-2]).startswith('@'):
+            self.pb[self.i] = assign_str('#' + str(next(self.addr_counter)), self.ss[-2][1:])
+            self.i += 1
         self.pb[self.i] = assign_str('#0', self.ss[-2])
         arr_len = int(self.ss[-1][1:])
         for _ in range(arr_len - 1):
