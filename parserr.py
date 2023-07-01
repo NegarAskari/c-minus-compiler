@@ -56,7 +56,7 @@ follow_dict = {'Program': ['$'],
 
 class SymbolTable:
     def __init__(self, addr_counter):
-        self.dict = dict()  # {ID/KEYWORD: dict()}
+        self.dict = OrderedDict()  # {ID/KEYWORD: dict()}
         self.addr_counter = addr_counter
 
     def initialize_with_keywords(self):
@@ -67,8 +67,8 @@ class SymbolTable:
         return name in self.dict
 
     def insert(self, name):
-        self.dict[name] = {SYMBOL_TABLE_KEYS.ADDRESS: next(self.addr_counter),
-                           SYMBOL_TABLE_KEYS.ALLOCATED: False}
+        self.dict[name] = {SYMBOL_TABLE_KEYS.ADDRESS: next(self.addr_counter)}
+                           # SYMBOL_TABLE_KEYS.ALLOCATED: False}
 
 
 class Parser:
@@ -97,6 +97,9 @@ class Parser:
 
             popped = self.stack.pop()
             if callable(popped):
+
+                print(self.code_gen.func_id)
+
                 # CodeGen
                 popped()
             else:
@@ -183,6 +186,7 @@ class Parser:
         if self.terminal == ';':
             self.stack.append(self.code_gen.allocate_var)
             self.stack.append((';', node))
+            self.stack.append(self.code_gen.add_local_var)
         elif self.terminal == '[':
             self.stack.append(self.code_gen.allocate_array)
             self.stack.append((';', node))
@@ -190,6 +194,7 @@ class Parser:
             self.stack.append(('NUM', node))
             self.stack.append(self.code_gen.pnum)
             self.stack.append(('[', node))
+            self.stack.append(self.code_gen.add_local_arr)
         else:
             self.error_handler('Var-declaration-prime', self.Var_declaration_prime, node)
 
@@ -197,7 +202,7 @@ class Parser:
         node = Node('Fun-declaration-prime', parent)
         if self.terminal == '(':
             self.stack.append(self.code_gen.pop_func_id)
-            self.stack.append(self.code_gen.return_)
+            self.stack.append(self.code_gen.ret_jump)
             self.stack.append((self.Compound_stmt, node))
             self.stack.append((')', node))
             self.stack.append((self.Params, node))
@@ -219,7 +224,6 @@ class Parser:
         if self.terminal == 'int':
             self.stack.append((self.Param_list, node))
             self.stack.append((self.Param_prime, node))
-            self.stack.append(self.code_gen.add_param)
             self.stack.append(('ID', node))
             self.stack.append(self.code_gen.pid)
             self.stack.append(('int', node))
@@ -243,7 +247,6 @@ class Parser:
         node = Node('Param', parent)
         if self.terminal in self.grammar['First']['Declaration-initial']:
             self.stack.append((self.Param_prime, node))
-            self.stack.append(self.code_gen.add_param)
             self.stack.append((self.Declaration_initial, node))
         else:
             self.error_handler('Param', self.Param, node)
@@ -253,8 +256,10 @@ class Parser:
         if self.terminal == '[':
             self.stack.append((']', node))
             self.stack.append(('[', node))
+            self.stack.append(self.code_gen.add_param_arr)
         elif self.terminal in self.grammar['Follow']['Param-prime']:
             Node('epsilon', node)
+            self.stack.append(self.code_gen.add_param_var)
         else:
             self.error_handler('Param-prime', self.Param_prime, node)
 
@@ -360,7 +365,7 @@ class Parser:
             self.stack.append(self.code_gen.return_val)
             self.stack.append((self.Expression, node))
         elif self.terminal == ';':
-            self.stack.append(self.code_gen.return_)
+            self.stack.append(self.code_gen.ret_jump)
             self.stack.append((';', node))
         else:
             self.error_handler('Return-stmt-prime', self.Return_stmt_prime, node)
@@ -381,7 +386,6 @@ class Parser:
         if self.terminal == '=':
             self.stack.append(self.code_gen.assign)
             self.stack.append((self.Expression, node))
-            self.stack.append(self.code_gen.allocate_var_assign)
             self.stack.append(('=', node))
         elif self.terminal == '[':
             self.stack.append((self.H, node))
